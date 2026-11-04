@@ -31,8 +31,12 @@ object ModelRepository {
     
     // URLs from KevinAHM's HuggingFace space and official tts-voices
     // Note: mimi_encoder and text_conditioner are FP32 only, others have INT8
-    private const val HF_BASE = "https://huggingface.co/spaces/KevinAHM/pocket-tts-web/resolve/main"
-    private const val VOICES_BASE = "https://huggingface.co/kyutai/tts-voices/resolve/main"
+    // Use domestic acceleration mirror (hf-mirror.com) for HuggingFace downloads,
+    // which are blocked in mainland China. GitHub release downloads are reachable
+    // directly, so they keep their original github.com URLs.
+    private const val HF_BASE = "https://hf-mirror.com/spaces/KevinAHM/pocket-tts-web/resolve/main"
+    private const val VOICES_BASE = "https://hf-mirror.com/kyutai/tts-voices/resolve/main"
+    private const val GH_BASE = "https://github.com"
     
     val models = listOf(
         ModelInfo(
@@ -40,14 +44,15 @@ object ModelRepository {
             name = "Pocket-TTS (Experimental)",
             description = "Required for voice cloning. Includes encoder, decoder, and flow matching models (~200MB total).",
             files = listOf(
-                // ONNX Models - use correct filenames from HuggingFace
-                ModelFile("pocket/models/mimi_encoder.onnx", "$HF_BASE/onnx/mimi_encoder.onnx", "Mimi Encoder (73MB)"),
-                ModelFile("pocket/models/text_conditioner.onnx", "$HF_BASE/onnx/text_conditioner.onnx", "Text Conditioner (16MB)"),
-                ModelFile("pocket/models/flow_lm_main_int8.onnx", "$HF_BASE/onnx/flow_lm_main_int8.onnx", "Flow LM Main INT8 (76MB)"),
-                ModelFile("pocket/models/flow_lm_flow_int8.onnx", "$HF_BASE/onnx/flow_lm_flow_int8.onnx", "Flow LM Flow INT8 (10MB)"),
-                ModelFile("pocket/models/mimi_decoder_int8.onnx", "$HF_BASE/onnx/mimi_decoder_int8.onnx", "Mimi Decoder INT8 (23MB)"),
+                // ONNX Models - correct paths/files in KevinAHM/pocket-tts-web space.
+                // NOTE: the models live under onnx/english_2026-04/ and are INT8 variants.
+                ModelFile("pocket/models/mimi_encoder.onnx", "$HF_BASE/onnx/english_2026-04/mimi_encoder_int8.onnx", "Mimi Encoder (20MB)"),
+                ModelFile("pocket/models/text_conditioner.onnx", "$HF_BASE/onnx/english_2026-04/text_conditioner_int8.onnx", "Text Conditioner (16MB)"),
+                ModelFile("pocket/models/flow_lm_main_int8.onnx", "$HF_BASE/onnx/english_2026-04/flow_lm_main_int8.onnx", "Flow LM Main INT8 (42MB)"),
+                ModelFile("pocket/models/flow_lm_flow_int8.onnx", "$HF_BASE/onnx/english_2026-04/flow_lm_flow_int8.onnx", "Flow LM Flow INT8 (10MB)"),
+                ModelFile("pocket/models/mimi_decoder_int8.onnx", "$HF_BASE/onnx/english_2026-04/mimi_decoder_int8.onnx", "Mimi Decoder INT8 (23MB)"),
                 // Tokenizer
-                ModelFile("pocket/tokenizer.model", "$HF_BASE/tokenizer.model", "Tokenizer (59KB)"),
+                ModelFile("pocket/tokenizer.model", "$HF_BASE/onnx/english_2026-04/tokenizer.model", "Tokenizer (59KB)"),
                 // Voice WAV files from official kyutai/tts-voices (encoded at runtime via mimi_encoder)
                 ModelFile("pocket/voices/alba.wav", "$VOICES_BASE/alba-mackenna/casual.wav", "Alba Voice"),
                 ModelFile("pocket/voices/marius.wav", "$VOICES_BASE/voice-donations/Selfie.wav", "Marius Voice"),
@@ -64,8 +69,8 @@ object ModelRepository {
             name = "Kokoro v1.0",
             description = "High quality, expressive standard voices.",
             files = listOf(
-                ModelFile("kokoro-v1.0.int8.onnx", "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/kokoro-v1.0.int8.onnx", "Model Weights"),
-                ModelFile("voices-v1.0.bin", "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/voices-v1.0.bin", "Voice Pack")
+                ModelFile("kokoro-v1.0.int8.onnx", "$GH_BASE/siva-sub/NekoSpeak/releases/download/v1.0.0/kokoro-v1.0.int8.onnx", "Model Weights"),
+                ModelFile("voices-v1.0.bin", "$GH_BASE/siva-sub/NekoSpeak/releases/download/v1.0.0/voices-v1.0.bin", "Voice Pack")
             )
         ),
         ModelInfo(
@@ -73,8 +78,8 @@ object ModelRepository {
             name = "Kitten TTS Nano",
             description = "Lightning fast, low latency model.",
             files = listOf(
-                ModelFile("kitten_tts_nano_v0_1.onnx", "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/kitten_tts_nano_v0_1.onnx", "Model Weights"),
-                ModelFile("voices.npz", "https://github.com/siva-sub/NekoSpeak/releases/download/v1.0.0/voices.npz", "Voice Pack")
+                ModelFile("kitten_tts_nano_v0_1.onnx", "$GH_BASE/siva-sub/NekoSpeak/releases/download/v1.0.0/kitten_tts_nano_v0_1.onnx", "Model Weights"),
+                ModelFile("voices.npz", "$GH_BASE/siva-sub/NekoSpeak/releases/download/v1.0.0/voices.npz", "Voice Pack")
             )
         )
     )
@@ -180,8 +185,9 @@ object ModelRepository {
                             Log.e(TAG, "Redirect without Location header")
                             return false
                         }
-                        Log.d(TAG, "Redirecting to: $newUrl")
-                        currentUrl = newUrl
+                        // Resolve relative redirects (hf-mirror returns relative /api/resolve-cache/... paths)
+                        currentUrl = URL(URL(currentUrl), newUrl).toString()
+                        Log.d(TAG, "Redirecting to: $currentUrl")
                         connection.disconnect()
                         redirectCount++
                     }

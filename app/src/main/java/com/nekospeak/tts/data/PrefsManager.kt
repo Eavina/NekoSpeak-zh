@@ -10,6 +10,12 @@ class PrefsManager(context: Context) {
 
     companion object {
         private const val PREFS_NAME = "nekospeak_prefs"
+
+        // Default model/voice: Chinese (Mandarin) Piper voice so the app is
+        // Chinese-first out of the box. Downloaded on demand from hf-mirror.com.
+        private const val DEFAULT_MODEL = "piper_zh_CN-huayan-medium"
+        private const val DEFAULT_VOICE = "zh_CN-huayan-medium"
+
         private const val KEY_VOICE = "current_voice"
         private const val KEY_MODEL = "current_model"
         private const val KEY_THREADS = "cpu_threads"
@@ -40,11 +46,11 @@ class PrefsManager(context: Context) {
     }
 
     var currentVoice: String
-        get() = prefs.getString(KEY_VOICE, "af_heart") ?: "af_heart"
+        get() = prefs.getString(KEY_VOICE, DEFAULT_VOICE) ?: DEFAULT_VOICE
         set(value) = prefs.edit().putString(KEY_VOICE, value).apply()
 
     var currentModel: String
-        get() = prefs.getString(KEY_MODEL, "kokoro_v1.0") ?: "kokoro_v1.0"
+        get() = prefs.getString(KEY_MODEL, DEFAULT_MODEL) ?: DEFAULT_MODEL
         set(value) = prefs.edit().putString(KEY_MODEL, value).apply()
 
     var cpuThreads: Int

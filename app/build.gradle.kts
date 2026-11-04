@@ -12,8 +12,9 @@ android {
         applicationId = "com.nekospeak.tts"
         minSdk = 26
         targetSdk = 35
-        versionCode = 16
-        versionName = "1.4.2"
+        ndkVersion = "28.2.13676358"
+        versionCode = 17
+        versionName = "1.5.0-alpha"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

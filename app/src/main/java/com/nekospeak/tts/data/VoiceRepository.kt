@@ -62,8 +62,8 @@ class VoiceRepository(private val context: Context) {
                 region = "IN",
                 quality = "medium",
                 speakerCount = 1,
-                onnxUrl = "https://huggingface.co/datasets/Jeyaram-K/piper-tamil-voice/resolve/main/ta_IN-Valluvar-medium/ta_IN-Valluvar-medium.onnx",
-                jsonUrl = "https://huggingface.co/datasets/Jeyaram-K/piper-tamil-voice/resolve/main/ta_IN-Valluvar-medium/ta_IN-Valluvar-medium.onnx.json",
+                onnxUrl = "https://hf-mirror.com/datasets/Jeyaram-K/piper-tamil-voice/resolve/main/ta_IN-Valluvar-medium/ta_IN-Valluvar-medium.onnx",
+                jsonUrl = "https://hf-mirror.com/datasets/Jeyaram-K/piper-tamil-voice/resolve/main/ta_IN-Valluvar-medium/ta_IN-Valluvar-medium.onnx.json",
                 sizeBytes = 63511038L, // Approximate
                 isBundled = false
             )
@@ -89,7 +89,7 @@ class VoiceRepository(private val context: Context) {
             if (onnxKey != null && jsonKey != null) {
                 // Check if bundled (Amy Low)
                 val isBundled = (meta.key == "en_US-amy-low")
-                val baseUrl = "https://huggingface.co/rhasspy/piper-voices/resolve/main/"
+                val baseUrl = "https://hf-mirror.com/rhasspy/piper-voices/resolve/main/"
                 
                 VoiceInfo(
                     id = meta.key,

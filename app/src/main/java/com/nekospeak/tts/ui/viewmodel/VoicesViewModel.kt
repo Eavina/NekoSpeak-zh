@@ -323,8 +323,8 @@ class VoicesViewModel(application: Application) : AndroidViewModel(application) 
                 val defaultId = when {
                     currentModel == "kitten_nano" -> "expr-voice-2-f" 
                     currentModel.startsWith("piper") -> {
-                         // Default to amy-low if available, else first bundled
-                         "en_US-amy-low"
+                         // Default to the Chinese (Mandarin) Piper voice
+                         "zh_CN-huayan-medium"
                     }
                     else -> "af_heart"
                 }

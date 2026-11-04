@@ -35,8 +35,8 @@ object PocketVoiceRepository {
     // Directory for downloaded voices
     private const val DOWNLOADED_VOICES_DIR = "pocket/downloaded_voices"
     
-    // HuggingFace datasets base URLs
-    private const val CELEBRITIES_BASE = "https://huggingface.co/datasets/sdialog/voices-celebrities/resolve/main/audio"
+    // HuggingFace datasets base URLs (use hf-mirror.com which is reachable in mainland China)
+    private const val CELEBRITIES_BASE = "https://hf-mirror.com/datasets/sdialog/voices-celebrities/resolve/main/audio"
     
     /**
      * Celebrity voices from sdialog/voices-celebrities dataset.

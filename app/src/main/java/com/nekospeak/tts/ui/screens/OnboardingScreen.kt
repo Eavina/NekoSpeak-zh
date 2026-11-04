@@ -38,8 +38,9 @@ fun OnboardingScreen(navController: NavController) {
     val context = LocalContext.current
     val prefs = remember { PrefsManager(context) }
     
-    var selectedModel by remember { mutableStateOf("kokoro_v1.0") }
-    var selectedVoice by remember { mutableStateOf("af_heart") }
+    // Default to the Chinese (Mandarin) Piper voice for a Chinese-first experience.
+    var selectedModel by remember { mutableStateOf("piper_zh_CN-huayan-medium") }
+    var selectedVoice by remember { mutableStateOf("zh_CN-huayan-medium") }
     
     // Model Installation State
     var isModelInstalled by remember { mutableStateOf(false) }
@@ -48,16 +49,18 @@ fun OnboardingScreen(navController: NavController) {
     
     // Check installation status when model changes
     LaunchedEffect(selectedModel) {
-        // Piper is bundled/managed differently usually, but we check repository if defined
         if (selectedModel.startsWith("piper")) {
-            isModelInstalled = true // Assuming bundled or managed by PiperEngine for starters
+            // Piper voices are downloaded on demand per-voice (e.g. zh_CN-huayan-medium).
+            val voiceId = selectedModel.removePrefix("piper_")
+            isModelInstalled = com.nekospeak.tts.data.VoiceRepository(context)
+                .getDownloadState(voiceId) == com.nekospeak.tts.data.DownloadState.Downloaded
         } else {
             isModelInstalled = com.nekospeak.tts.data.ModelRepository.isInstalled(context, selectedModel)
         }
         
         // Reset voices logic
         val voices = if (selectedModel.startsWith("piper")) {
-            listOf(com.nekospeak.tts.data.VoiceDefinition("en_US-amy-low", "Amy (Low)", "Female", "US", null, null, "piper"))
+            listOf(com.nekospeak.tts.data.VoiceDefinition("zh_CN-huayan-medium", "Huayan (Medium) - Chinese", "Female", "CN", null, null, "piper"))
         } else if (selectedModel == "pocket_v1") {
             // Show only bundled voices for onboarding (not celebrity voices)
             com.nekospeak.tts.data.VoiceDefinitions.POCKET_VOICES
@@ -189,11 +192,11 @@ fun OnboardingScreen(navController: NavController) {
                             Spacer(modifier = Modifier.height(12.dp))
 
                             ModelSelectionCard(
-                                title = "Piper (Amy Low)",
-                                description = "Fast, natural English voice. Bundled offline.",
-                                warning = null,
-                                isSelected = selectedModel == "piper_en_US-amy-low",
-                                onClick = { selectedModel = "piper_en_US-amy-low" }
+                                title = "Piper (Chinese Huayan)",
+                                description = "Natural Mandarin voice (中文普通话). Downloaded on demand.",
+                                warning = if (isModelInstalled) null else "Download Required (~37MB)",
+                                isSelected = selectedModel == "piper_zh_CN-huayan-medium",
+                                onClick = { selectedModel = "piper_zh_CN-huayan-medium" }
                             )
                         }
                         1 -> {
@@ -207,7 +210,7 @@ fun OnboardingScreen(navController: NavController) {
                             )
                             
                             val voices = if (selectedModel.startsWith("piper")) {
-                                listOf(com.nekospeak.tts.data.VoiceDefinition("en_US-amy-low", "Amy (Low)", "Female", "US", null, null, "piper"))
+                                listOf(com.nekospeak.tts.data.VoiceDefinition("zh_CN-huayan-medium", "Huayan (Medium) - Chinese", "Female", "CN", null, null, "piper"))
                             } else if (selectedModel == "pocket_v1") {
                                 // Show only bundled voices for onboarding (not celebrity voices)
                                 com.nekospeak.tts.data.VoiceDefinitions.POCKET_VOICES
@@ -401,14 +404,54 @@ fun OnboardingScreen(navController: NavController) {
                                 onClick = { 
                                     isDownloading = true
                                     scope.launch {
-                                        com.nekospeak.tts.data.ModelRepository.downloadModel(context, selectedModel) { success ->
-                                            if (success) {
-                                                isModelInstalled = true
+                                        if (selectedModel.startsWith("piper")) {
+                                            // Download the Piper voice via HttpURLConnection (VoiceDownloader).
+                                            val voiceId = selectedModel.removePrefix("piper_")
+                                            val repo = com.nekospeak.tts.data.VoiceRepository(context)
+                                            val voice = repo.availableVoices.find { it.id == voiceId }
+                                            if (voice == null) {
                                                 isDownloading = false
-                                                scope.launch { pagerState.animateScrollToPage(1) }
                                             } else {
-                                                isDownloading = false
-                                                // Handle error (show toast/snackbar)
+                                                val downloader = com.nekospeak.tts.data.VoiceDownloader(context)
+                                                downloader.downloadVoice(voiceId, voice.onnxUrl, voice.jsonUrl)
+                                                var done = false
+                                                var polls = 0
+                                                val maxPolls = 600 // 10 minutes of polling (1s each) safety cap
+                                                while (!done && polls < maxPolls) {
+                                                    val status = downloader.getDownloadStatus(voiceId)
+                                                    when (status.state) {
+                                                        com.nekospeak.tts.data.DownloadState.Downloaded -> {
+                                                            isModelInstalled = true
+                                                            isDownloading = false
+                                                            done = true
+                                                            pagerState.animateScrollToPage(1)
+                                                        }
+                                                        com.nekospeak.tts.data.DownloadState.NotAvailable -> {
+                                                            isDownloading = false
+                                                            done = true
+                                                        }
+                                                        else -> {
+                                                            downloadProgress = status.progress
+                                                            kotlinx.coroutines.delay(1000)
+                                                            polls++
+                                                        }
+                                                    }
+                                                }
+                                                if (!done) {
+                                                    // Timed out — stop the spinner so the user can retry.
+                                                    isDownloading = false
+                                                }
+                                            }
+                                        } else {
+                                            com.nekospeak.tts.data.ModelRepository.downloadModel(context, selectedModel) { success ->
+                                                if (success) {
+                                                    isModelInstalled = true
+                                                    isDownloading = false
+                                                    scope.launch { pagerState.animateScrollToPage(1) }
+                                                } else {
+                                                    isDownloading = false
+                                                    // Handle error (show toast/snackbar)
+                                                }
                                             }
                                         }
                                     }
